@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MYC Events</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: #f5f7f9;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      max-width: 320px;
+    }
+    .title {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .event {
+      margin-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 6px;
+    }
+    .event:last-child {
+      border-bottom: none;
+    }
+    .date {
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="title">⚓ Coming Up at MYC</div>
+  <div id="events">Loading…</div>
+</div>
+
+<script>
+const icalUrl = "https://calendar.google.com/calendar/ical/ba0af3213c11d9337a4bc7b2117c6307fc6858e98ba405e9253cf45e304bcc5b%40group.calendar.google.com/public/basic.ics";
+
+const api = "https://api.allorigins.win/raw?url=" + encodeURIComponent(icalUrl);
+
+fetch(api)
+  .then(res => res.text())
+  .then(text => {
+    const events = parseICS(text);
+
+    const upcoming = events
+      .filter(e => new Date(e.start) > new Date())
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+      .slice(0, 3);
+
+    const container = document.getElementById("events");
+
+    if (upcoming.length === 0) {
+      container.innerHTML = "No upcoming events";
+      return;
+    }
+
+    container.innerHTML = upcoming.map(e => `
+      <div class="event">
+        <div><strong>${e.title}</strong></div>
+        <div class="date">${new Date(e.start).toLocaleString()}</div>
+      </div>
+    `).join("");
+  });
+
+// Simple ICS parser
+function parseICS(data) {
+  const events = [];
+  const chunks = data.split("BEGIN:VEVENT");
+
+  chunks.forEach(chunk => {
+    const title = match(chunk, "SUMMARY");
+    const start = match(chunk, "DTSTART");
+
+    if (title && start) {
+      events.push({ title, start: formatDate(start) });
+    }
+  });
+
+  return events;
+}
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+function formatDate(str) {
+  return str.replace(
+    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,
+    "$1-$2-$3T$4:$5"
+  );
+}
+</script>
+
+</body>
+</html>
