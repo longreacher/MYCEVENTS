@@ -75,3 +75,51 @@ fetch(api)
   })
   .catch(err => {
     document.getElementById("events").innerHTML =
+      "<span style='color:#666;'>Unable to load events</span>";
+    console.error(err);
+  });
+
+/* ✅ Robust ICS parser */
+
+function parseICS(data) {
+  const events = [];
+  const chunks = data.split("BEGIN:VEVENT");
+
+  chunks.forEach(chunk => {
+    const title = match(chunk, "SUMMARY");
+    const startRaw = matchDate(chunk);
+
+    if (title && startRaw) {
+      events.push({
+        title,
+        start: formatDate(startRaw)
+      });
+    }
+  });
+
+  return events;
+}
+
+// Handles timezone + standard DTSTART formats
+function matchDate(text) {
+  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6})/);
+  return match ? match[1] : null;
+}
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+// Converts to valid ISO date string
+function formatDate(str) {
+  return str.replace(
+    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
+    "$1-$2-$3T$4:$5:$6"
+  );
+}
+</script>
+
+</body>
+</html>
