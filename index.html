@@ -85,7 +85,7 @@ async function loadEvents() {
   const events = parseICS(text);
 
   const upcoming = events
-    .filter(e => e.start instanceof Date && !isNaN(e.start))
+    .filter(e => e.start instanceof Date && !isNaN(e.start))   // ✅ SAFE FILTER
     .filter(e => e.start > new Date())
     .sort((a, b) => a.start - b.start)
     .slice(0, 3);
@@ -96,7 +96,8 @@ async function loadEvents() {
   }
 
   container.innerHTML = upcoming.map(e => {
-    const formattedDate = e.start.toLocaleString('en-CA', {
+    const formattedDate = new Date(e.start).toLocaleString('en-CA', {
+      timeZone: 'America/Halifax',
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -114,6 +115,8 @@ async function loadEvents() {
   }).join("");
 }
 
+/* ✅ Safer parser */
+
 function parseICS(data) {
   const events = [];
   const chunks = data.split("BEGIN:VEVENT");
@@ -122,3 +125,53 @@ function parseICS(data) {
     try {
       const title = match(chunk, "SUMMARY");
       const startRaw = matchDate(chunk);
+
+      if (!title || !startRaw) return;
+
+      const date = new Date(formatDate(startRaw));
+
+      if (isNaN(date)) return; // ✅ skip bad dates
+
+      events.push({
+        title,
+        start: date
+      });
+
+    } catch (err) {
+      // silently skip bad entries
+    }
+  });
+
+  return events;
+}
+
+function matchDate(text) {
+  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?)/);
+  return match ? match[1] : null;
+}
+
+function formatDate(str) {
+  if (str.endsWith("Z")) {
+    return str.replace(
+      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+      "$1-$2-$3T$4:$5:$6Z"
+    );
+  }
+
+  return str.replace(
+    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
+    "$1-$2-$3T$4:$5:$6"
+  );
+}
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+loadEvents();
+</script>
+
+</body>
+</html>
