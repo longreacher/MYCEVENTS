@@ -69,8 +69,16 @@ fetch(api)
     container.innerHTML = upcoming.map(e => `
       <div class="event">
         <div><strong>${e.title}</strong></div>
-        <div class="date">${new Date(e.start).toLocaleString()}</div>
-      </div>
+<div class="date">${
+  new Date(e.start).toLocaleString('en-CA', {
+    timeZone: 'America/Halifax',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}</div>      </div>
     `).join("");
   })
   .catch(err => {
