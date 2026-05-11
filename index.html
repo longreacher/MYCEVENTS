@@ -45,3 +45,36 @@
 
 <div class="card">
   <div class="title">🌊 Coming Up at MYC</div>
+  <div id="events">Loading…</div>
+</div>
+
+<script>
+const icalUrl = "https://calendar.google.com/calendar/ical/ba0af3213c11d9337a4bc7b2117c6307fc6858e98ba405e9253cf45e304bcc5b%40group.calendar.google.com/public/basic.ics";
+
+async function loadEvents() {
+  const proxies = [
+    url => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url),
+    url => "https://cors.isomorphic-git.org/" + url
+  ];
+
+  let text = null;
+
+  for (let proxy of proxies) {
+    try {
+      const res = await fetch(proxy(icalUrl));
+      if (!res.ok) continue;
+
+      const data = await res.text();
+
+      if (data && data.includes("BEGIN:VEVENT")) {
+        text = data;
+        break;
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+
+  const container = document.getElementById("events");
+
+  if (!text) {
