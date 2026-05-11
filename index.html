@@ -78,3 +78,48 @@ async function loadEvents() {
   const container = document.getElementById("events");
 
   if (!text) {
+    container.innerHTML = "<span style='color:#666;'>Unable to load events</span>";
+    return;
+  }
+
+  const events = parseICS(text);
+
+  const upcoming = events
+    .filter(e => e.start instanceof Date && !isNaN(e.start))
+    .filter(e => e.start > new Date())
+    .sort((a, b) => a.start - b.start)
+    .slice(0, 3);
+
+  if (upcoming.length === 0) {
+    container.innerHTML = "No upcoming events";
+    return;
+  }
+
+  container.innerHTML = upcoming.map(e => {
+    const formattedDate = e.start.toLocaleString('en-CA', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    return `
+      <div class="event">
+        <div class="event-title">${e.title}</div>
+        <div class="date">${formattedDate}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function parseICS(data) {
+  const events = [];
+  const chunks = data.split("BEGIN:VEVENT");
+
+  chunks.forEach(chunk => {
+    try {
+      const title = match(chunk, "SUMMARY");
+      const startRaw = matchDate(chunk);
+
