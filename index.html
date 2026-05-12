@@ -95,25 +95,36 @@ async function loadEvents() {
     return;
   }
 
-  container.innerHTML = upcoming.map(e => {
-    const formattedDate = new Date(e.start).toLocaleString('en-CA', {
-      timeZone: 'America/Halifax',
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+container.innerHTML = upcoming.map(e => {
+  const now = new Date();
+  const isToday = e.start.toDateString() === now.toDateString();
+  const isRace = e.title.toLowerCase().includes("race");
 
-    return `
-      <div class="event">
-        <div class="event-title">${e.title}</div>
-        <div class="date">${formattedDate}</div>
-      </div>
-    `;
-  }).join("");
-}
+  const formattedDate = e.start.toLocaleString('en-CA', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  const highlightStyle = (isToday && isRace)
+    ? "background:#fff7cc; padding:8px; border-radius:8px;"
+    : "";
+
+  const badge = (isToday && isRace)
+    ? `<div style="font-size:12px; color:#b45309; font-weight:600;">🏁 Tonight’s Race</div>`
+    : "";
+
+  return `
+    <div class="event" style="${highlightStyle}">
+      ${badge}
+      <div class="event-title">${e.title}</div>
+      <div class="date">${formattedDate}</div>
+    </div>
+  `;
+}).join("");}
 
 /* ✅ Safer parser */
 
