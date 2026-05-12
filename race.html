@@ -90,7 +90,8 @@ async function loadEvents() {
   const upcoming = events
     .filter(e => e.start instanceof Date && !isNaN(e.start))   // ✅ SAFE FILTER
     .filter(e => e.start > new Date())
-    .sort((a, b) => a.start - b.start)
+    .sort((a, b) => a.start - b.start)  
+    .filter(e => e.title.toLowerCase().includes("race"))   // ✅ THIS LINE
     .slice(0, 3);
 
   if (upcoming.length === 0) {
