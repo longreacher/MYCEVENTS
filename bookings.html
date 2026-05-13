@@ -91,7 +91,7 @@ async function loadEvents() {
       .filter(e => e.start instanceof Date && !isNaN(e.start))
       .filter(e => e.start > new Date())   // ✅ proper future filter
       .sort((a, b) => a.start - b.start)
-      .slice(0, 5);
+      .slice(0, 7);
 
     if (upcoming.length === 0) {
       container.innerHTML = "No bookings";
