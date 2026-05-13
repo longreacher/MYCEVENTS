@@ -84,7 +84,7 @@ async function loadEvents() {
 
     const upcoming = allEvents
       .filter(e => e.start instanceof Date && !isNaN(e.start))
-      .filter(e => e.start > new Date())
+      .filter(e => true)
       .sort((a, b) => a.start - b.start)
       .slice(0, 5);
 
