@@ -63,7 +63,6 @@ const calendars = [
   "https://calendar.google.com/calendar/ical/68aa4fb41866fbfc2463ff91e5c4c89c3aef03ed78aed2973da900f83a1bf3c6%40group.calendar.google.com/public/basic.ics"
 ];
 
-// Stable proxy
 const proxy = url =>
   "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
 
@@ -75,9 +74,11 @@ async function loadEvents() {
 
     for (let cal of calendars) {
       const res = await fetch(proxy(cal));
-      const text = await res.text();
+      if (!res.ok) continue;
 
+      const text = await res.text();
       const events = parseICS(text);
+
       allEvents = allEvents.concat(events);
     }
 
@@ -116,7 +117,7 @@ async function loadEvents() {
   }
 }
 
-/* ✅ Title transformer */
+/* ✅ Title formatter */
 
 function formatTitle(title) {
   if (!title.includes("•")) return title;
@@ -138,7 +139,7 @@ function formatTitle(title) {
   return title;
 }
 
-/* ✅ Robust ICS parser */
+/* ✅ ICS parsing */
 
 function parseICS(data) {
   const events = [];
@@ -150,9 +151,9 @@ function parseICS(data) {
 
     if (!title || !startRaw) return;
 
-    const date = new Date(formatDate(startRaw));
+    const date = parseLocalDate(startRaw);
 
-    if (isNaN(date)) return;
+    if (!(date instanceof Date) || isNaN(date)) return;
 
     events.push({
       title,
@@ -163,45 +164,46 @@ function parseICS(data) {
   return events;
 }
 
-/* ✅ Handles time, UTC, and all-day events */
+/* ✅ Extract dates safely */
 function matchDate(text) {
   const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?|\d{8})/);
   return match ? match[1] : null;
 }
 
-/* ✅ Converts all formats to valid JS date */
-function formatDate(str) {
+/* ✅ THE IMPORTANT BIT – no timezone conversion */
+function parseLocalDate(str) {
 
   // All-day event
   if (str.length === 8) {
-    return new Date(
-      str.replace(
-        /(\d{4})(\d{2})(\d{2})/,
-        "$1-$2-$3T00:00:00"
-      )
-    );
+    const y = str.substring(0,4);
+    const m = str.substring(4,6);
+    const d = str.substring(6,8);
+
+    return new Date(y, m-1, d);
   }
 
-  // Build ISO string WITHOUT timezone
-  const iso = str.replace(
-    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
-    "$1-$2-$3T$4:$5:$6"
-  );
+  // Remove trailing Z if present
+  if (str.endsWith("Z")) {
+    str = str.slice(0, -1);
+  }
 
-  // ✅ FORCE treat as local time (no UTC conversion)
-  const [datePart, timePart] = iso.split("T");
-  const [year, month, day] = datePart.split("-");
-  const [hour, minute, second] = timePart.split(":");
+  const year = str.substring(0,4);
+  const month = str.substring(4,6);
+  const day = str.substring(6,8);
+  const hour = str.substring(9,11);
+  const minute = str.substring(11,13);
+  const second = str.substring(13,15);
 
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    Number(second)
-  );
+  // ✅ Construct as LOCAL time (this fixes your +3 hours)
+  return new Date(year, month-1, day, hour, minute, second);
 }
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
 loadEvents();
 
 </script>
