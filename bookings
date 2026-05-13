@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MYC Bookings</title>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 12px;
+  background: #f5f7f9;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  max-width: 320px;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.event {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.event:last-child {
+  border-bottom: none;
+}
+
+.event-title {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.date {
+  color: #555;
+  font-size: 13px;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="title">🔧 Equipment Bookings</div>
+  <div id="events">Loading…</div>
+</div>
+
+<script>
+
+const calendars = [
+  "https://calendar.google.com/calendar/ical/mooringmover%40gmail.com/public/basic.ics",
+  "https://calendar.google.com/calendar/ical/68aa4fb41866fbfc2463ff91e5c4c89c3aef03ed78aed2973da900f83a1bf3c6%40group.calendar.google.com/public/basic.ics"
+];
+
+// proxy (same stable one)
+const proxy = url =>
+  "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
+
+async function loadEvents() {
+  const container = document.getElementById("events");
+
+  try {
+    let allText = "";
+
+    // ✅ fetch both calendars
+    for (let cal of calendars) {
+      const res = await fetch(proxy(cal));
+      const text = await res.text();
+      allText += text;
+    }
+
+    const events = parseICS(allText);
+
+    const upcoming = events
+      .filter(e => e.start > new Date())
+      .sort((a, b) => a.start - b.start)
+      .slice(0, 5); // show a few more since it's bookings
+
+    if (upcoming.length === 0) {
+      container.innerHTML = "No bookings";
+      return;
+    }
+
+    container.innerHTML = upcoming.map(e => {
+      const formattedDate = e.start.toLocaleString('en-CA', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      return `
+        <div class="event">
+          <div class="event-title">${formatTitle(e.title)}</div>
+          <div class="date">${formattedDate}</div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (err) {
+    container.innerHTML = "Unable to load bookings";
+    console.error(err);
+  }
+}
+
+/* ✅ Title transformer */
+
+function formatTitle(title) {
+
+  if (!title.includes("•")) return title;
+
+  const parts = title.split("•");
+
+  if (parts.length !== 2) return title;
+
+  const name = parts[0].trim();
+  const action = parts[1].toLowerCase();
+
+  if (action.includes("gin pole")) {
+    return "🏗️ Gin Pole - " + name;
+  }
+
+  if (action.includes("mooring mover")) {
+    return "⚓ Mooring Mover - " + name;
+  }
+
+  return title;
+}
+
+/* ✅ ICS parser */
+
+function parseICS(data) {
+  const events = [];
+  const chunks = data.split("BEGIN:VEVENT");
+
+  chunks.forEach(chunk => {
+    const title = match(chunk, "SUMMARY");
+    const startRaw = matchDate(chunk);
+
+    if (!title || !startRaw) return;
+
+    const date = new Date(formatDate(startRaw));
+
+    if (isNaN(date)) return;
+
+    events.push({
+      title,
+      start: date
+    });
+  });
+
+  return events;
+}
+
+function matchDate(text) {
+  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{4,6})/);
+  return match ? match[1] : null;
+}
+
+function formatDate(str) {
+  if (str.length === 15) {
+    return str.replace(
+      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/,
+      "$1-$2-$3T$4:$5:00"
+    );
+  }
+
+  return str.replace(
+    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
+    "$1-$2-$3T$4:$5:$6"
+  );
+}
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+loadEvents();
+
+</script>
+
+</body>
+</html>
+``
