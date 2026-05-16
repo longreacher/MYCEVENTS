@@ -88,7 +88,6 @@ const events = parseICS(text);
 const upcoming = events
 .filter(e => e.start instanceof Date && !isNaN(e.start))
 .filter(e => e.start > new Date())
-    .filter(e => e.title.toLowerCase().includes("race"))   // ✅ THIS LINE
 .sort((a, b) => a.start - b.start)
 .slice(0, 3);
 
