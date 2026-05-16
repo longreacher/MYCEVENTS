@@ -107,20 +107,38 @@ async function loadEvents() {
   }).join("");
 }
 
-/* ✅ Smart date formatter */
+/* ✅ Smart + safe date formatter */
 function formatSmartDate(date) {
   const tz = 'America/Halifax';
 
   const now = new Date();
-  const eventDate = new Date(date);
+  const event = new Date(date);
 
-  const today = new Date(now.toLocaleString('en-CA', { timeZone: tz }));
-  const event = new Date(eventDate.toLocaleString('en-CA', { timeZone: tz }));
+  // Extract safe date parts in timezone
+  const todayParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  }).formatToParts(now);
 
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const startOfEvent = new Date(event.getFullYear(), event.getMonth(), event.getDate());
+  const eventParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  }).formatToParts(event);
 
-  const diffDays = Math.round((startOfEvent - startOfToday) / (1000 * 60 * 60 * 24));
+  function partsToDate(parts) {
+    const obj = {};
+    parts.forEach(p => obj[p.type] = p.value);
+    return new Date(obj.year, obj.month - 1, obj.day);
+  }
+
+  const todayDate = partsToDate(todayParts);
+  const eventDate = partsToDate(eventParts);
+
+  const diffDays = Math.round((eventDate - todayDate) / (1000 * 60 * 60 * 24));
 
   const timePart = event.toLocaleString('en-CA', {
     timeZone: tz,
@@ -143,7 +161,7 @@ function formatSmartDate(date) {
   });
 }
 
-/* ✅ Safer parser */
+/* ✅ Parser (unchanged, because it wasn’t the villain) */
 function parseICS(data) {
   const events = [];
   const chunks = data.split("BEGIN:VEVENT");
@@ -165,7 +183,7 @@ function parseICS(data) {
       });
 
     } catch (err) {
-      // skip silently
+      // skip quietly
     }
   });
 
