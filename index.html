@@ -98,8 +98,8 @@ async function loadEvents() {
   }
 
   container.innerHTML = upcoming.map(e => {
-    const formattedDate = new Date(e.start).toLocaleString('en-CA', {
-      timeZone: 'America/Halifax',
+    const formattedDate = formatRelativeDate(e.start);
+    timeZone: 'America/Halifax',
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -171,7 +171,43 @@ function match(text, field) {
   const match = text.match(regex);
   return match ? match[1].trim() : null;
 }
+function formatRelativeDate(date) {
+  const now = new Date();
 
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  let prefix = null;
+
+  if (eventDay.getTime() === today.getTime()) {
+    prefix = "Today";
+  } else if (eventDay.getTime() === tomorrow.getTime()) {
+    prefix = "Tomorrow";
+  }
+
+  const timePart = date.toLocaleString('en-CA', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  if (prefix) {
+    return `${prefix}, ${timePart}`;
+  }
+
+  // Fallback: normal full date
+  return date.toLocaleString('en-CA', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
 loadEvents();
 </script>
 
