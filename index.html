@@ -98,6 +98,13 @@ async function loadEvents() {
   container.innerHTML = upcoming.map(e => {
     const formattedDate = formatSmartDate(e.start);
 
+    const highlightStyle = (isToday && isEvent)
+    ? "background:#fff7cc; padding:8px; border-radius:8px;"
+    : "";
+
+  const badge = (isToday && isEvent)
+    ? `<div style="font-size:12px; color:#b45309; font-weight:600;"> 🎉 Today </div>`
+    : "";
     return `
       <div class="event">
         <div class="event-title">${e.title}</div>
