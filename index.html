@@ -95,26 +95,33 @@ async function loadEvents() {
     return;
   }
 
-container.innerHTML = upcoming.map(e => {
+// ✅ SAFE RENDERING — WILL NOT CRASH
+let output = "";
+
+for (let i = 0; i < upcoming.length; i++) {
+
+  const e = upcoming[i];
 
   let formattedDate = "";
   let isToday = false;
 
-  try {
-    if (e.start instanceof Date && !isNaN(e.start)) {
+  if (e.start instanceof Date && !isNaN(e.start)) {
 
-      const now = new Date();
+    const now = new Date();
 
-      isToday =
-        e.start.getFullYear() === now.getFullYear() &&
-        e.start.getMonth() === now.getMonth() &&
-        e.start.getDate() === now.getDate();
-
-      formattedDate = formatRelativeDate(e.start);
+    if (
+      e.start.getFullYear() === now.getFullYear() &&
+      e.start.getMonth() === now.getMonth() &&
+      e.start.getDate() === now.getDate()
+    ) {
+      isToday = true;
     }
-  } catch (err) {
-    formattedDate = "";
-    isToday = false;
+
+    try {
+      formattedDate = formatRelativeDate(e.start);
+    } catch {
+      formattedDate = "";
+    }
   }
 
   const highlightStyle = isToday
@@ -123,13 +130,15 @@ container.innerHTML = upcoming.map(e => {
 
   const emoji = isToday ? "🎉 " : "";
 
-  return `
+  output += `
     <div class="event" style="${highlightStyle}">
-      <div class="event-title">${emoji}${e.title}</div>
+      <div class="event-title">${emoji}${e.title || ""}</div>
       <div class="date">${formattedDate}</div>
     </div>
   `;
-}).join("");
+}
+
+container.innerHTML = output;
 
 /* ✅ Smart + safe date formatter */
 function formatSmartDate(date) {
