@@ -95,24 +95,16 @@ async function loadEvents() {
     return;
   }
 
-container.innerHTML = upcoming.map(e => {
+  container.innerHTML = upcoming.map(e => {
+    const formattedDate = formatSmartDate(e.start);
 
-  const now = new Date();
-
-  const isToday =
-    e.start.getFullYear() === now.getFullYear() &&
-    e.start.getMonth() === now.getMonth() &&
-    e.start.getDate() === now.getDate();
-
-  const formattedDate = formatSmartDate(e.start);
-
-  const highlightStyle = isToday
-    ? "background:#fff7cc; padding:8px; border-radius:8px;"
-    : "";
-
-  const emoji = isToday ? "🎉 " : "";
-
-
+    return `
+      <div class="event">
+        <div class="event-title">${e.title}</div>
+        <div class="date">${formattedDate}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 /* ✅ Smart + safe date formatter */
