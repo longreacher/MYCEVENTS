@@ -97,13 +97,25 @@ async function loadEvents() {
 
 container.innerHTML = upcoming.map(e => {
 
-  const now = new Date();
-  const isToday =
-    e.start.getFullYear() === now.getFullYear() &&
-    e.start.getMonth() === now.getMonth() &&
-    e.start.getDate() === now.getDate();
+  let formattedDate = "";
+  let isToday = false;
 
-  const formattedDate = formatRelativeDate(e.start);
+  try {
+    if (e.start instanceof Date && !isNaN(e.start)) {
+
+      const now = new Date();
+
+      isToday =
+        e.start.getFullYear() === now.getFullYear() &&
+        e.start.getMonth() === now.getMonth() &&
+        e.start.getDate() === now.getDate();
+
+      formattedDate = formatRelativeDate(e.start);
+    }
+  } catch (err) {
+    formattedDate = "";
+    isToday = false;
+  }
 
   const highlightStyle = isToday
     ? "background:#fff7cc; border-radius:8px; padding:8px;"
@@ -118,7 +130,6 @@ container.innerHTML = upcoming.map(e => {
     </div>
   `;
 }).join("");
-}
 
 /* ✅ Smart + safe date formatter */
 function formatSmartDate(date) {
