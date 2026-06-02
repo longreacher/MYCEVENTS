@@ -95,50 +95,17 @@ async function loadEvents() {
     return;
   }
 
-// ✅ SAFE RENDERING — WILL NOT CRASH
-let output = "";
+  container.innerHTML = upcoming.map(e => {
+    const formattedDate = formatSmartDate(e.start);
 
-for (let i = 0; i < upcoming.length; i++) {
-
-  const e = upcoming[i];
-
-  let formattedDate = "";
-  let isToday = false;
-
-  if (e.start instanceof Date && !isNaN(e.start)) {
-
-    const now = new Date();
-
-    if (
-      e.start.getFullYear() === now.getFullYear() &&
-      e.start.getMonth() === now.getMonth() &&
-      e.start.getDate() === now.getDate()
-    ) {
-      isToday = true;
-    }
-
-    try {
-      formattedDate = formatRelativeDate(e.start);
-    } catch {
-      formattedDate = "";
-    }
-  }
-
-  const highlightStyle = isToday
-    ? "background:#fff7cc; border-radius:8px; padding:8px;"
-    : "";
-
-  const emoji = isToday ? "🎉 " : "";
-
-  output += `
-    <div class="event" style="${highlightStyle}">
-      <div class="event-title">${emoji}${e.title || ""}</div>
-      <div class="date">${formattedDate}</div>
-    </div>
-  `;
+    return `
+      <div class="event">
+        <div class="event-title">${e.title}</div>
+        <div class="date">${formattedDate}</div>
+      </div>
+    `;
+  }).join("");
 }
-
-container.innerHTML = output;
 
 /* ✅ Smart + safe date formatter */
 function formatSmartDate(date) {
