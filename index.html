@@ -1,45 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>MYC Events</title>
-<style>
-body {
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 12px;
-  background: white;
-}
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  max-width: 320px;
-}
-.title {
-  font-weight: 700;
-  font-size: 16px;
-  margin-bottom: 10px;
-}
-.event {
-  margin-bottom: 10px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
-}
-.event:last-child {
-  border-bottom: none;
-}
-.event-title {
-  font-size: 14px;
-  font-weight: 600;
-}
-.date {
-  color: #555;
-  font-size: 13px;
-  margin-top: 2px;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>MYC Events</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: white;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      max-width: 320px;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .event {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      text-align: center;
+
+    }
+    .event:last-child {
+      border-bottom: none;
+    }
+    .event-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .date {
+      color: #555;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+  </style>
 </head>
 <body>
 
@@ -85,9 +88,9 @@ async function loadEvents() {
   const events = parseICS(text);
 
   const upcoming = events
-    .filter(e => e.start instanceof Date && !isNaN(e.start))
+    .filter(e => e.start instanceof Date && !isNaN(e.start))   // ✅ SAFE FILTER
     .filter(e => e.start > new Date())
-    .sort((a, b) => a.start - b.start)
+    .sort((a, b) => a.start - b.start)  
     .slice(0, 3);
 
   if (upcoming.length === 0) {
@@ -95,63 +98,11 @@ async function loadEvents() {
     return;
   }
 
-  container.innerHTML = upcoming.map(e => {
-    const formattedDate = formatSmartDate(e.start);
-
-    return `
-      <div class="event">
-        <div class="event-title">${e.title}</div>
-        <div class="date">${formattedDate}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-/* ✅ Smart + safe date formatter */
-function formatSmartDate(date) {
-  const tz = 'America/Halifax';
-
+container.innerHTML = upcoming.map(e => {
   const now = new Date();
-  const event = new Date(date);
+  const isToday = e.start.toDateString() === now.toDateString();
 
-  // Extract safe date parts in timezone
-  const todayParts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  }).formatToParts(now);
-
-  const eventParts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  }).formatToParts(event);
-
-  function partsToDate(parts) {
-    const obj = {};
-    parts.forEach(p => obj[p.type] = p.value);
-    return new Date(obj.year, obj.month - 1, obj.day);
-  }
-
-  const todayDate = partsToDate(todayParts);
-  const eventDate = partsToDate(eventParts);
-
-  const diffDays = Math.round((eventDate - todayDate) / (1000 * 60 * 60 * 24));
-
-  const timePart = event.toLocaleString('en-CA', {
-    timeZone: tz,
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  if (diffDays === 0) return `Today at ${timePart}`;
-  if (diffDays === 1) return `Tomorrow at ${timePart}`;
-
-  return event.toLocaleString('en-CA', {
-    timeZone: tz,
+  const formattedDate = e.start.toLocaleString('en-CA', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -159,9 +110,26 @@ function formatSmartDate(date) {
     minute: '2-digit',
     hour12: true
   });
-}
 
-/* ✅ Parser (unchanged, because it wasn’t the villain) */
+  const highlightStyle = (isToday)
+    ? "background:#91cde3; padding:8px; border-radius:8px;"
+    : "";
+
+  const badge = (isToday)
+    ? `<div style="font-size:12px; color:#b45309; font-weight:600;">🎉 Today! </div>`
+    : "";
+
+  return `
+    <div class="event" style="${highlightStyle}">
+      ${badge}
+      <div class="event-title">${e.title}</div>
+      <div class="date">${formattedDate}</div>
+    </div>
+  `;
+}).join("");}
+
+/* ✅ Safer parser */
+
 function parseICS(data) {
   const events = [];
   const chunks = data.split("BEGIN:VEVENT");
@@ -175,7 +143,7 @@ function parseICS(data) {
 
       const date = new Date(formatDate(startRaw));
 
-      if (isNaN(date)) return;
+      if (isNaN(date)) return; // ✅ skip bad dates
 
       events.push({
         title,
@@ -183,7 +151,7 @@ function parseICS(data) {
       });
 
     } catch (err) {
-      // skip quietly
+      // silently skip bad entries
     }
   });
 
