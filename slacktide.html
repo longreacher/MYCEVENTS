@@ -1,27 +1,15 @@
-<div class="card">
-  <div class="title">🌊 Next Slack Tide</div>
-  <div id="tide">Loading…</div>
-</div>
-
-<script>
-const url = "https://tides.gc.ca/en/stations/00066/predictions/annual";
-
-// use same proxy approach
-const proxy = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
-
 fetch(proxy)
   .then(res => res.text())
   .then(html => {
 
     const now = new Date();
-
-    // ✅ find all rows containing "Slack"
     const rows = html.match(/<tr[^>]*>(.*?)<\/tr>/gs);
 
-    let nextSlack = null;
+    let nextEvent = null;
 
     for (let row of rows) {
-      if (!row.toLowerCase().includes("slack")) continue;
+
+      if (!row.includes("HW") && !row.includes("LW")) continue;
 
       // extract date + time
       const match = row.match(/(\w+)\s+(\d+).*?(\d{2}:\d{2})/);
@@ -32,16 +20,13 @@ fetch(proxy)
       const day = match[2];
       const time = match[3];
 
-      // build date string (current year assumed)
       const year = new Date().getFullYear();
-      const dateStr = `${month} ${day} ${year} ${time}`;
-
-      const eventDate = new Date(dateStr);
+      const eventDate = new Date(`${month} ${day} ${year} ${time}`);
 
       if (eventDate > now) {
-        nextSlack = {
+        nextEvent = {
           date: eventDate,
-          raw: row
+          type: row.includes("HW") ? "Ebb slack (after high water)" : "Flood slack (after low water)"
         };
         break;
       }
@@ -49,17 +34,12 @@ fetch(proxy)
 
     const container = document.getElementById("tide");
 
-    if (!nextSlack) {
-      container.innerHTML = "No upcoming slack tide";
+    if (!nextEvent) {
+      container.innerHTML = "No upcoming tide data";
       return;
     }
 
-    // detect flood/ebb
-    let direction = "";
-    if (nextSlack.raw.toLowerCase().includes("flood")) direction = "Flood slack";
-    if (nextSlack.raw.toLowerCase().includes("ebb")) direction = "Ebb slack";
-
-    const formatted = nextSlack.date.toLocaleString('en-CA', {
+    const formatted = nextEvent.date.toLocaleString('en-CA', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -70,10 +50,9 @@ fetch(proxy)
 
     container.innerHTML = `
       <div><strong>${formatted}</strong></div>
-      <div style="font-size:13px; color:#555;">${direction}</div>
+      <div style="font-size:13px; color:#555;">${nextEvent.type}</div>
     `;
   })
   .catch(() => {
     document.getElementById("tide").innerHTML = "Unable to load tide data";
   });
-</script>
