@@ -4,42 +4,76 @@
 </div>
 
 <script>
-const url = "https://tides.gc.ca/en/stations/66";
+const url = "https://tides.gc.ca/en/stations/00066/predictions/annual";
 
-// proxy (same pattern you're already using)
+// use same proxy approach
 const proxy = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
 
 fetch(proxy)
   .then(res => res.text())
   .then(html => {
 
-    // crude parse (works because page layout is consistent)
-    const match = html.match(/Slack Water(.*?)<\/tr>/s);
+    const now = new Date();
 
-    if (!match) {
-      document.getElementById("tide").innerHTML = "No data found";
+    // ✅ find all rows containing "Slack"
+    const rows = html.match(/<tr[^>]*>(.*?)<\/tr>/gs);
+
+    let nextSlack = null;
+
+    for (let row of rows) {
+      if (!row.toLowerCase().includes("slack")) continue;
+
+      // extract date + time
+      const match = row.match(/(\w+)\s+(\d+).*?(\d{2}:\d{2})/);
+
+      if (!match) continue;
+
+      const month = match[1];
+      const day = match[2];
+      const time = match[3];
+
+      // build date string (current year assumed)
+      const year = new Date().getFullYear();
+      const dateStr = `${month} ${day} ${year} ${time}`;
+
+      const eventDate = new Date(dateStr);
+
+      if (eventDate > now) {
+        nextSlack = {
+          date: eventDate,
+          raw: row
+        };
+        break;
+      }
+    }
+
+    const container = document.getElementById("tide");
+
+    if (!nextSlack) {
+      container.innerHTML = "No upcoming slack tide";
       return;
     }
 
-    const row = match[1];
+    // detect flood/ebb
+    let direction = "";
+    if (nextSlack.raw.toLowerCase().includes("flood")) direction = "Flood slack";
+    if (nextSlack.raw.toLowerCase().includes("ebb")) direction = "Ebb slack";
 
-    const timeMatch = row.match(/(\d{2}:\d{2})/);
-    const directionMatch = row.match(/(Flood|Ebb)/i);
+    const formatted = nextSlack.date.toLocaleString('en-CA', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
 
-    if (!timeMatch) {
-      document.getElementById("tide").innerHTML = "No tide data";
-      return;
-    }
-
-    const time = timeMatch[1];
-    const direction = directionMatch ? directionMatch[1] : "";
-
-    document.getElementById("tide").innerHTML = `
-      <div><strong>${time}</strong></div>
-      <div style="font-size:13px; color:#555;">${direction} slack</div>
+    container.innerHTML = `
+      <div><strong>${formatted}</strong></div>
+      <div style="font-size:13px; color:#555;">${direction}</div>
     `;
   })
   .catch(() => {
-    document.getElementById("tide").innerHTML = "Unable to load tide";
+    document.getElementById("tide").innerHTML = "Unable to load tide data";
   });
 </script>
