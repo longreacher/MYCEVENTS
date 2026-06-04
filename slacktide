@@ -1,0 +1,45 @@
+<div class="card">
+  <div class="title">🌊 Next Slack Tide</div>
+  <div id="tide">Loading…</div>
+</div>
+
+<script>
+const url = "https://tides.gc.ca/en/stations/66";
+
+// proxy (same pattern you're already using)
+const proxy = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
+
+fetch(proxy)
+  .then(res => res.text())
+  .then(html => {
+
+    // crude parse (works because page layout is consistent)
+    const match = html.match(/Slack Water(.*?)<\/tr>/s);
+
+    if (!match) {
+      document.getElementById("tide").innerHTML = "No data found";
+      return;
+    }
+
+    const row = match[1];
+
+    const timeMatch = row.match(/(\d{2}:\d{2})/);
+    const directionMatch = row.match(/(Flood|Ebb)/i);
+
+    if (!timeMatch) {
+      document.getElementById("tide").innerHTML = "No tide data";
+      return;
+    }
+
+    const time = timeMatch[1];
+    const direction = directionMatch ? directionMatch[1] : "";
+
+    document.getElementById("tide").innerHTML = `
+      <div><strong>${time}</strong></div>
+      <div style="font-size:13px; color:#555;">${direction} slack</div>
+    `;
+  })
+  .catch(() => {
+    document.getElementById("tide").innerHTML = "Unable to load tide";
+  });
+</script>
