@@ -1,3 +1,7 @@
+<script>
+const url = "https://tides.gc.ca/en/stations/00066/predictions/annual";
+const proxy = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
+
 fetch(proxy)
   .then(res => res.text())
   .then(html => {
@@ -11,14 +15,28 @@ fetch(proxy)
 
       if (!row.includes("HW") && !row.includes("LW")) continue;
 
-      // extract date + time
-      const match = row.match(/(\w+)\s+(\d+).*?(\d{2}:\d{2})/);
+      // ✅ extract all table cells
+      const cells = [...row.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map(x => x[1].trim());
 
-      if (!match) continue;
+      if (cells.length < 2) continue;
 
-      const month = match[1];
-      const day = match[2];
-      const time = match[3];
+      // Example structure: [date, time, height, type]
+      let time = null;
+      let type = "";
+
+      for (let c of cells) {
+        if (/^\d{2}:\d{2}$/.test(c)) time = c;
+        if (c === "HW" || c === "LW") type = c;
+      }
+
+      if (!time || !type) continue;
+
+      // ✅ Extract month/day from row text (page includes it once per group)
+      const dateMatch = row.match(/(\w+)\s+(\d{1,2})/);
+      if (!dateMatch) continue;
+
+      const month = dateMatch[1];
+      const day = dateMatch[2];
 
       const year = new Date().getFullYear();
       const eventDate = new Date(`${month} ${day} ${year} ${time}`);
@@ -26,7 +44,9 @@ fetch(proxy)
       if (eventDate > now) {
         nextEvent = {
           date: eventDate,
-          type: row.includes("HW") ? "Ebb slack (after high water)" : "Flood slack (after low water)"
+          type: type === "HW"
+            ? "Ebb slack (after high water)"
+            : "Flood slack (after low water)"
         };
         break;
       }
@@ -38,6 +58,9 @@ fetch(proxy)
       container.innerHTML = "No upcoming tide data";
       return;
     }
+
+    // ✅ Apply slack offset (~30 min)
+    nextEvent.date.setMinutes(nextEvent.date.getMinutes() + 30);
 
     const formatted = nextEvent.date.toLocaleString('en-CA', {
       weekday: 'short',
@@ -56,3 +79,4 @@ fetch(proxy)
   .catch(() => {
     document.getElementById("tide").innerHTML = "Unable to load tide data";
   });
+</script>
