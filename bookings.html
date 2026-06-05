@@ -55,7 +55,7 @@ body {
 <body>
 
 <div class="card">
-   <div class="title">  </div>
+   <div class="title"></div>
   <div id="events">Loading…</div>
 </div>
 
@@ -66,8 +66,24 @@ const calendars = [
   "https://calendar.google.com/calendar/ical/68aa4fb41866fbfc2463ff91e5c4c89c3aef03ed78aed2973da900f83a1bf3c6%40group.calendar.google.com/public/basic.ics"
 ];
 
-const proxy = url =>
-  "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
+/* ✅ NEW: multiple proxy fallbacks */
+const proxies = [
+  url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
+  url => "https://cors.isomorphic-git.org/" + url
+];
+
+/* ✅ Try proxies until one works */
+async function fetchWithFallback(url) {
+  for (let proxy of proxies) {
+    try {
+      const res = await fetch(proxy(url));
+      if (res.ok) return await res.text();
+    } catch (e) {
+      console.warn("Proxy failed, trying next...");
+    }
+  }
+  throw new Error("All proxies failed");
+}
 
 async function loadEvents() {
   const container = document.getElementById("events");
@@ -76,18 +92,14 @@ async function loadEvents() {
     let allEvents = [];
 
     for (let cal of calendars) {
-      const res = await fetch(proxy(cal));
-      if (!res.ok) continue;
-
-      const text = await res.text();
+      const text = await fetchWithFallback(cal);
       const events = parseICS(text);
-
       allEvents = allEvents.concat(events);
     }
 
     const upcoming = allEvents
       .filter(e => e.start instanceof Date && !isNaN(e.start))
-      .filter(e => e.start > new Date())   // ✅ proper future filter
+      .filter(e => e.start > new Date())
       .sort((a, b) => a.start - b.start)
       .slice(0, 7);
 
@@ -155,7 +167,6 @@ function parseICS(data) {
     if (!title || !startRaw) return;
 
     const date = parseDate(startRaw);
-
     if (!(date instanceof Date) || isNaN(date)) return;
 
     events.push({
@@ -167,28 +178,22 @@ function parseICS(data) {
   return events;
 }
 
-/* ✅ Match all valid date formats */
 function matchDate(text) {
   const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?|\d{8})/);
   return match ? match[1] : null;
 }
 
-/* ✅ THE KEY FIX: treat everything as local */
 function parseDate(str) {
-
   let date;
 
-  // All-day event
   if (str.length === 8) {
-    date = new Date(
+    return new Date(
       Number(str.substring(0,4)),
       Number(str.substring(4,6)) - 1,
       Number(str.substring(6,8))
     );
-    return date;
   }
 
-  // Remove Z if present (we're overriding timezone anyway)
   if (str.endsWith("Z")) {
     str = str.slice(0, -1);
   }
@@ -202,12 +207,10 @@ function parseDate(str) {
     Number(str.substring(13,15))
   );
 
-  // ✅ FIX: shift back 3 hours
   date.setHours(date.getHours() - 3);
 
   return date;
 }
-
 
 function match(text, field) {
   const regex = new RegExp(field + ":(.*)");
