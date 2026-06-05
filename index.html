@@ -52,32 +52,17 @@
 
 <script>
 const icalUrl = "https://summer-cloud-780c.longreacher.workers.dev/";
-/* ✅ Updated proxy list */
-const proxies = [
-  url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
-  url => "https://cors.isomorphic-git.org/" + url
-];
 
-/* ✅ Robust fetch with fallback */
-async function fetchWithFallback(url) {
-  for (let proxy of proxies) {
-    try {
-      const res = await fetch(proxy(url));
-      if (!res.ok) continue;
+async function loadEvents() {
+  const container = document.getElementById("events");
 
-      const data = await res.text();
+  try {
+    const res = await fetch(icalUrl);
+    if (!res.ok) throw new Error("Fetch failed");
 
-      /* sanity check so we don't accept garbage */
-      if (data && data.includes("BEGIN:VEVENT")) {
-        return data;
-      }
+    const text = await res.text();
+    const events = parseICS(text);
 
-    } catch (e) {
-      console.warn("Proxy failed, trying next…");
-    }
-  }
-  throw new Error("All proxies failed");
-}
 
 async function loadEvents() {
   const container = document.getElementById("events");
