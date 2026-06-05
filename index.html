@@ -1,8 +1,14 @@
+<div id="events">Loading…</div>
 <script>
 const icalUrl = "https://summer-cloud-780c.longreacher.workers.dev/";
 
 async function loadEvents() {
   const container = document.getElementById("events");
+
+  if (!container) {
+    console.error("No #events element found");
+    return;
+  }
 
   try {
     const res = await fetch(icalUrl);
@@ -108,5 +114,5 @@ function match(text, field) {
 }
 
 /* ✅ Corrected line */
-document.addEventListener("DOMContentLoaded", loadEvents);
+window.addEventListener("load", loadEvents);
 </script>
