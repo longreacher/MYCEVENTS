@@ -28,7 +28,6 @@
       border-bottom: 1px solid #eee;
       padding-bottom: 8px;
       text-align: center;
-
     }
     .event:last-child {
       border-bottom: none;
@@ -54,81 +53,88 @@
 <script>
 const icalUrl = "https://calendar.google.com/calendar/ical/ba0af3213c11d9337a4bc7b2117c6307fc6858e98ba405e9253cf45e304bcc5b%40group.calendar.google.com/public/basic.ics";
 
-async function loadEvents() {
-  const proxies = [
-    url => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url),
-    url => "https://cors.isomorphic-git.org/" + url
-  ];
+/* ✅ Updated proxy list */
+const proxies = [
+  url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
+  url => "https://cors.isomorphic-git.org/" + url
+];
 
-  let text = null;
-
+/* ✅ Robust fetch with fallback */
+async function fetchWithFallback(url) {
   for (let proxy of proxies) {
     try {
-      const res = await fetch(proxy(icalUrl));
+      const res = await fetch(proxy(url));
       if (!res.ok) continue;
 
       const data = await res.text();
 
+      /* sanity check so we don't accept garbage */
       if (data && data.includes("BEGIN:VEVENT")) {
-        text = data;
-        break;
+        return data;
       }
+
     } catch (e) {
-      continue;
+      console.warn("Proxy failed, trying next…");
     }
   }
+  throw new Error("All proxies failed");
+}
 
+async function loadEvents() {
   const container = document.getElementById("events");
 
-  if (!text) {
+  try {
+    const text = await fetchWithFallback(icalUrl);
+    const events = parseICS(text);
+
+    const upcoming = events
+      .filter(e => e.start instanceof Date && !isNaN(e.start))
+      .filter(e => e.start > new Date())
+      .sort((a, b) => a.start - b.start)
+      .slice(0, 3);
+
+    if (upcoming.length === 0) {
+      container.innerHTML = "No upcoming events";
+      return;
+    }
+
+    container.innerHTML = upcoming.map(e => {
+      const now = new Date();
+      const isToday = e.start.toDateString() === now.toDateString();
+
+      const formattedDate = e.start.toLocaleString('en-CA', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      const highlightStyle = isToday
+        ? "background:#91cde3; padding:8px; border-radius:8px;"
+        : "";
+
+      const badge = isToday
+        ? `<div style="font-size:12px; color:#000000; font-weight:600;">🎉 Today!</div>`
+        : "";
+
+      return `
+        <div class="event" style="${highlightStyle}">
+          ${badge}
+          <div class="event-title">${e.title}</div>
+          <div class="date">${formattedDate}</div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (err) {
     container.innerHTML = "<span style='color:#666;'>Unable to load events</span>";
-    return;
+    console.error(err);
   }
+}
 
-  const events = parseICS(text);
-
-  const upcoming = events
-    .filter(e => e.start instanceof Date && !isNaN(e.start))   // ✅ SAFE FILTER
-    .filter(e => e.start > new Date())
-    .sort((a, b) => a.start - b.start)  
-    .slice(0, 3);
-
-  if (upcoming.length === 0) {
-    container.innerHTML = "No upcoming events";
-    return;
-  }
-
-container.innerHTML = upcoming.map(e => {
-  const now = new Date();
-  const isToday = e.start.toDateString() === now.toDateString();
-
-  const formattedDate = e.start.toLocaleString('en-CA', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  const highlightStyle = (isToday)
-    ? "background:#91cde3; padding:8px; border-radius:8px;"
-    : "";
-
-  const badge = (isToday)
-    ? `<div style="font-size:12px; color:#000000; font-weight:600;">🎉 Today! </div>`
-    : "";
-
-  return `
-    <div class="event" style="${highlightStyle}">
-      ${badge}
-      <div class="event-title">${e.title}</div>
-      <div class="date">${formattedDate}</div>
-    </div>
-  `;
-}).join("");}
-
-/* ✅ Safer parser */
+/* ✅ Parser (unchanged logic, just safe) */
 
 function parseICS(data) {
   const events = [];
@@ -142,17 +148,14 @@ function parseICS(data) {
       if (!title || !startRaw) return;
 
       const date = new Date(formatDate(startRaw));
-
-      if (isNaN(date)) return; // ✅ skip bad dates
+      if (isNaN(date)) return;
 
       events.push({
         title,
         start: date
       });
 
-    } catch (err) {
-      // silently skip bad entries
-    }
+    } catch (err) {}
   });
 
   return events;
@@ -188,3 +191,4 @@ loadEvents();
 
 </body>
 </html>
+``
