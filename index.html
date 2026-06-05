@@ -1,14 +1,72 @@
-<div id="events">Loading…</div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MYC Events</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: white;
+      display: flex;
+      justify-content: centre;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: centre;
+    }
+
+    .event {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      text-align: centre;
+    }
+
+    .event:last-child {
+      border-bottom: none;
+    }
+
+    .event-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .date {
+      color: #555;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="title">🌊 Coming Up at MYC</div>
+  <div id="events">Loading…</div>
+</div>
+
 <script>
 const icalUrl = "https://summer-cloud-780c.longreacher.workers.dev/";
 
 async function loadEvents() {
   const container = document.getElementById("events");
-
-  if (!container) {
-    console.error("No #events element found");
-    return;
-  }
+  if (!container) return;
 
   try {
     const res = await fetch(icalUrl);
@@ -64,8 +122,6 @@ async function loadEvents() {
   }
 }
 
-/* Parser */
-
 function parseICS(data) {
   const events = [];
   const chunks = data.split("BEGIN:VEVENT");
@@ -74,14 +130,12 @@ function parseICS(data) {
     try {
       const title = match(chunk, "SUMMARY");
       const startRaw = matchDate(chunk);
-
       if (!title || !startRaw) return;
 
       const date = new Date(formatDate(startRaw));
       if (isNaN(date)) return;
 
       events.push({ title, start: date });
-
     } catch {}
   });
 
@@ -100,7 +154,6 @@ function formatDate(str) {
       "$1-$2-$3T$4:$5:$6Z"
     );
   }
-
   return str.replace(
     /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
     "$1-$2-$3T$4:$5:$6"
@@ -113,6 +166,8 @@ function match(text, field) {
   return match ? match[1].trim() : null;
 }
 
-/* ✅ Corrected line */
 window.addEventListener("load", loadEvents);
 </script>
+
+</body>
+</html>
