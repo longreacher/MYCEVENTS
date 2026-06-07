@@ -135,3 +135,52 @@ function parseICS(data) {
   const events = [];
   const chunks = data.split("BEGIN:VEVENT");
 
+  chunks.forEach(chunk => {
+    try {
+      const title = match(chunk, "SUMMARY");
+      const startRaw = matchDate(chunk);
+      if (!title || !startRaw) return;
+
+      const date = new Date(formatDate(startRaw));
+      if (isNaN(date)) return;
+
+      events.push({ title, start: date });
+    } catch (e) {}
+  });
+
+  return events;
+}
+
+function matchDate(text) {
+  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?|\d{8})/);
+  return match ? match[1] : null;
+}
+
+function formatDate(str) {
+  if (str.length === 8) {
+    return str.replace(
+      /(\d{4})(\d{2})(\d{2})/,
+      "$1-$2-$3"
+    );
+  }
+
+  if (str.endsWith("Z")) {
+    return str.replace(
+      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+      "$1-$2-$3T$4:$5:$6Z"
+    );
+  }
+
+  return str.replace(
+    /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
+    "$1-$2-$3T$4:$5:$6"
+  );
+}
+
+function match(text, field) {
+  const regex = new RegExp(field + ":(.*)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+window.addEventListener("load", loadEvents);
