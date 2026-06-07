@@ -5,61 +5,59 @@
   <title>MYC Events</title>
 
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 12px;
-      background: white;
-      display: flex;
-     text-align: centre;
-    }
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 12px;
+  background: white;
 
-    .card {
-      background: white;
-      border-radius: 2px;
-      padding: 4px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      max-width: 320px;
-      width: 100%;
-    }
+  display: flex;
+  justify-content: center;   /* ✅ centre the card horizontally */
+}
 
-    .title {
-      font-weight: 700;
-      font-size: 16px;
-      margin-bottom: 10px;
-      text-align: centre;
-    }
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 
-    .event {
-      margin-bottom: 5px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 4px;
-      text-align: centre;
-    }
+  width: 100%;
+  max-width: 320px;
 
-    .event:last-child {
-      border-bottom: none;
-    }
+  text-align: center;        /* ✅ centres EVERYTHING inside */
+}
 
-    .event-title {
-      font-size: 14px;
-      font-weight: 600;
-      text-align: centre;
+.title {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
 
-    }
+.event {
+  margin-bottom: 5px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 4px;
+}
+
+.event:last-child {
+  border-bottom: none;
+}
+
+.event-title {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  text-align: center;        /* ✅ explicitly centred */
+}
 
 .date {
   color: #555;
   font-size: 13px;
   margin-top: 2px;
+
+  display: block;            /* ✅ fixes alignment issue */
   text-align: center;
 }
-    }
-  </style>
-</head>
-
-<body>
-
 <div class="card">
   <div class="title">🌊 Coming Up at MYC</div>
   <div id="events">Loading…</div>
