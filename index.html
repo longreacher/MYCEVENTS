@@ -45,7 +45,6 @@
       font-size: 14px;
       font-weight: 600;
       text-align: center;
-
     }
 
     .date {
@@ -53,7 +52,6 @@
       font-size: 13px;
       margin-top: 2px;
       text-align: center;
-
     }
   </style>
 </head>
@@ -94,14 +92,27 @@ async function loadEvents() {
       const now = new Date();
       const isToday = e.start.toDateString() === now.toDateString();
 
-      const formattedDate = e.start.toLocaleString('en-CA', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
+      let formattedDate;
+      let allDayLabel = "";
+
+      if (e.isAllDay) {
+        formattedDate = e.start.toLocaleDateString('en-CA', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+
+        allDayLabel = `<div style="font-size:12px; font-weight:600; color:#0077b6;">All Day</div>`;
+      } else {
+        formattedDate = e.start.toLocaleString('en-CA', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
 
       const highlightStyle = isToday
         ? "background:#91cde3; padding:8px; border-radius:8px;"
@@ -115,6 +126,7 @@ async function loadEvents() {
         <div class="event" style="${highlightStyle}">
           ${badge}
           <div class="event-title">${e.title}</div>
+          ${allDayLabel}
           <div class="date">${formattedDate}</div>
         </div>
       `;
@@ -136,10 +148,23 @@ function parseICS(data) {
       const startRaw = matchDate(chunk);
       if (!title || !startRaw) return;
 
-      const date = new Date(formatDate(startRaw));
+      const isAllDay = startRaw.length === 8; // YYYYMMDD
+
+      let date;
+      if (isAllDay) {
+        const formatted = startRaw.replace(
+          /(\d{4})(\d{2})(\d{2})/,
+          "$1-$2-$3T00:00:00"
+        );
+        date = new Date(formatted);
+      } else {
+        date = new Date(formatDate(startRaw));
+      }
+
       if (isNaN(date)) return;
 
-      events.push({ title, start: date });
+      events.push({ title, start: date, isAllDay });
+
     } catch {}
   });
 
@@ -147,7 +172,7 @@ function parseICS(data) {
 }
 
 function matchDate(text) {
-  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?)/);
+  const match = text.match(/DTSTART[^:]*:(\d{8}(T\d{6}Z?)?)/);
   return match ? match[1] : null;
 }
 
