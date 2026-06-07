@@ -10,33 +10,31 @@
       margin: 0;
       padding: 12px;
       background: white;
-
       display: flex;
-      justify-content: center;
+      justify-content: centre;
     }
 
     .card {
       background: white;
-      border-radius: 8px;
-      padding: 8px;
+      border-radius: 12px;
+      padding: 14px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-
-      width: 100%;
       max-width: 320px;
-
-      text-align: center;
+      width: 100%;
     }
 
     .title {
       font-weight: 700;
       font-size: 16px;
       margin-bottom: 10px;
+      text-align: centre;
     }
 
     .event {
-      margin-bottom: 5px;
+      margin-bottom: 10px;
       border-bottom: 1px solid #eee;
-      padding-bottom: 4px;
+      padding-bottom: 8px;
+      text-align: centre;
     }
 
     .event:last-child {
@@ -46,17 +44,16 @@
     .event-title {
       font-size: 14px;
       font-weight: 600;
-      display: block;
-      text-align: center;
+      text-align: centre;
+
     }
 
     .date {
       color: #555;
       font-size: 13px;
       margin-top: 2px;
+      text-align: centre;
 
-      display: block;
-      text-align: center;
     }
   </style>
 </head>
@@ -69,16 +66,14 @@
 </div>
 
 <script>
-const calendarUrl = "https://calendar.google.com/calendar/ical/ba0af3213c11d9337a4bc7b2117c6307fc6858e98ba405e9253cf45e304bcc5b%40group.calendar.google.com/public/basic.ics";
-
-/* ✅ IMPORTANT: your worker needs ?url= */
-const proxyBase = "https://summer-cloud-780c.longreacher.workers.dev/?url=";
+const icalUrl = "https://summer-cloud-780c.longreacher.workers.dev/";
 
 async function loadEvents() {
   const container = document.getElementById("events");
+  if (!container) return;
 
   try {
-    const res = await fetch(proxyBase + encodeURIComponent(calendarUrl));
+    const res = await fetch(icalUrl);
     if (!res.ok) throw new Error("Fetch failed");
 
     const text = await res.text();
@@ -145,32 +140,24 @@ function parseICS(data) {
       if (isNaN(date)) return;
 
       events.push({ title, start: date });
-    } catch (e) {}
+    } catch {}
   });
 
   return events;
 }
 
 function matchDate(text) {
-  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?|\d{8})/);
+  const match = text.match(/DTSTART[^:]*:(\d{8}T\d{6}Z?)/);
   return match ? match[1] : null;
 }
 
 function formatDate(str) {
-  if (str.length === 8) {
-    return str.replace(
-      /(\d{4})(\d{2})(\d{2})/,
-      "$1-$2-$3"
-    );
-  }
-
   if (str.endsWith("Z")) {
     return str.replace(
       /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
       "$1-$2-$3T$4:$5:$6Z"
     );
   }
-
   return str.replace(
     /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
     "$1-$2-$3T$4:$5:$6"
@@ -184,3 +171,7 @@ function match(text, field) {
 }
 
 window.addEventListener("load", loadEvents);
+</script>
+
+</body>
+</html>
