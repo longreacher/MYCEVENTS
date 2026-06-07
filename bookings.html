@@ -67,22 +67,12 @@ const calendars = [
 ];
 
 /* ✅ NEW: multiple proxy fallbacks */
-const proxies = [
-  url => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
-  url => "https://cors.isomorphic-git.org/" + url
-];
-
-/* ✅ Try proxies until one works */
-async function fetchWithFallback(url) {
-  for (let proxy of proxies) {
-    try {
-      const res = await fetch(proxy(url));
-      if (res.ok) return await res.text();
-    } catch (e) {
-      console.warn("Proxy failed, trying next...");
-    }
-  }
-  throw new Error("All proxies failed");
+const proxyBase = "https://lucky-mountain-84c0.darrenwhite.workers.dev/?url=";
+ 
+async function fetchCalendar(url) {
+  const res = await fetch(proxyBase + encodeURIComponent(url));
+  if (!res.ok) throw new Error("Fetch failed");
+  return await res.text();
 }
 
 async function loadEvents() {
@@ -91,10 +81,10 @@ async function loadEvents() {
   try {
     let allEvents = [];
 
-    for (let cal of calendars) {
-      const text = await fetchWithFallback(cal);
-      const events = parseICS(text);
-      allEvents = allEvents.concat(events);
+for (let cal of calendars) {
+  const text = await fetchCalendar(cal);
+  const events = parseICS(text);
+  allEvents = allEvents.concat(events);
     }
 
     const upcoming = allEvents
