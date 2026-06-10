@@ -81,7 +81,7 @@ async function loadEvents() {
       .slice(0, 3);
 
     if (upcoming.length === 0) {
-      container.innerHTML = "No upcoming races";
+      container.innerHTML = "Our racing calendar missed the mark! Try again later.";
       return;
     }
 
