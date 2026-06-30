@@ -94,7 +94,7 @@ for (let cal of calendars) {
       .slice(0, 7);
 
     if (upcoming.length === 0) {
-      container.innerHTML = "Not seeing any bookings.  Check again later";
+      container.innerHTML = "Not seeing any current bookings.  Refresh or check later";
       return;
     }
 
@@ -117,7 +117,7 @@ for (let cal of calendars) {
     }).join("");
 
   } catch (err) {
-    container.innerHTML = "Unable to load bookings";
+    container.innerHTML = "Unable to display current bookings, check back later";
     console.error(err);
   }
 }
